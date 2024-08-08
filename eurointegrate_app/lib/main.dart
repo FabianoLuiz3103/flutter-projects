@@ -1,4 +1,5 @@
 import 'package:eurointegrate_app/pages/login.dart';
+import 'package:eurointegrate_app/pages/perfil.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -12,12 +13,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: false,
       ),
-      home: const Login(),
+      home: const Perfil(),
     );
   }
 }

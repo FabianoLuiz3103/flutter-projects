@@ -1,3 +1,6 @@
+import 'package:eurointegrate_app/components/campo.dart';
+import 'package:eurointegrate_app/components/consts.dart';
+import 'package:eurointegrate_app/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -14,10 +17,16 @@ class _LoginState extends State<Login> {
   final TextEditingController _senha = TextEditingController();
   String? _mensagemErro;
   bool erro = false;
+  bool obscureText = true;
+  bool _carregando = false;
 
   Future<void> _login() async {
+    setState(() {
+      _carregando = true;
+      _mensagemErro = null;
+    });
     var url = Uri.parse(
-        'https://955e-2804-7efc-32c-4a01-3953-1aa8-e0ce-c0c5.ngrok-free.app/users/login');
+        'https://ad8b-2804-18-804-f425-2923-8f06-a77c-1e7a.ngrok-free.app/users/login');
     var body = {"email": _email.text, "senha": _senha.text};
     var jsonBody = jsonEncode(body);
     http.Response? response;
@@ -27,105 +36,133 @@ class _LoginState extends State<Login> {
         headers: {"Content-Type": "application/json"},
         body: jsonBody,
       );
+        await Future.delayed(const Duration(seconds: 1)); 
 
-      if (response.statusCode == 200) {
-        // Se o servidor retornar um código 200 OK, parse o JSON.
-        print('Resposta: ${response.body}');
-      } else {
-        print('Falha ao fazer login: ${response.statusCode}');
-      }
+      // if (response.statusCode == 200) {
+      //    Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      //   String token = jsonResponse["token"];
+      //   print('Resposta: ${jsonResponse}');
+      // } else {
+      //   print('Falha ao fazer login: ${response.statusCode}');
+      // }
     } catch (e) {
       print('Erro: $e');
     }
 
     setState(() {
-      if (response!.statusCode == 401) {
+      if(response!.statusCode == 200){
+         Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        String token = jsonResponse["token"];
+        Navigator.push(context, MaterialPageRoute(builder: (context) =>  Home(token: token)));
+      }
+      if (response.statusCode == 401) {
         _mensagemErro = '${response.body}: email ou senha inválidos';
+        _carregando = false;
         erro = true;
       }
+    });
+  }
+
+  void mostrarSenha() {
+    setState(() {
+      obscureText = !obscureText;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      body: _carregando ? const Center(child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,  
+           children:[ CircularProgressIndicator(color: azulEuro,), 
+           SizedBox(height: 5,),
+           Text("Validando dados...", 
+                    )
+           ],
+           ),
+           ): Column(
         children: [
-          const SizedBox(
-            height: 10.0,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(60.0, 8.0, 60.0, 8.0),
-            child: TextField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: erro
-                        ? Colors.red
-                        : Colors.grey, // Cor padrão quando não há erro
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: erro
-                        ? Colors.red
-                        : Colors.blue, // Cor quando o campo está em foco
-                  ),
-                ),
+          Container(
+            width: double.infinity,
+            height: 150,
+            decoration: const BoxDecoration(
+              color: azulEuro,
+              borderRadius: BorderRadius.only(
+                bottomLeft:
+                    medidaRaio, // Raio do canto inferior esquerdo
+                bottomRight:
+                    medidaRaio, // Raio do canto inferior direito
+              ),
+            ),
+            child: FractionallySizedBox(
+              widthFactor:
+                  1.5, // Ajuste essa fração para aumentar ou diminuir o tamanho
+              heightFactor: 1.5,
+              child: Image.asset(
+                "images/lg_branco.png",
+                fit: BoxFit.contain,
               ),
             ),
           ),
-          const SizedBox(height: 15.0),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(60.0, 8.0, 60.0, 8.0),
-            child: TextField(
-              controller: _senha,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Senha',
-                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: erro
-                        ? Colors.red
-                        : Colors.grey, // Cor padrão quando não há erro
+           const SizedBox(
+                height: 60.0,
+              ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(
+                height: 10.0,
+              ),
+              Padding(
+                  padding: const EdgeInsets.fromLTRB(60.0, 8.0, 60.0, 8.0),
+                  child: campoForm(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      obscureText: false,
+                      label: 'E-mail',
+                      erro: erro,
+                      isSenha: false)),
+              const SizedBox(height: 15.0),
+              Padding(
+                  padding: const EdgeInsets.fromLTRB(60.0, 8.0, 60.0, 8.0),
+                  child: campoForm(
+                      controller: _senha,
+                      obscureText: obscureText,
+                      label: 'Senha',
+                      erro: erro,
+                      mostrarSenha: mostrarSenha,
+                      isSenha: true)),
+              const SizedBox(
+                height: 15.0,
+              ),
+              SizedBox(
+                width: 200,
+                height: 45,
+                child: ElevatedButton(
+                 onPressed: _carregando ? null : _login,
+                  style: const ButtonStyle(
+                    backgroundColor: botaoAzul,
+                    shape: radiusBorda,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: erro
-                        ? Colors.red
-                        : Colors.blue, // Cor quando o campo está em foco
+                  child: const Text(
+                    "ACESSAR",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(
-            height: 15.0,
-          ),
-          SizedBox(
-            width: 200,
-            height: 45,
-            child: ElevatedButton(
-              onPressed: _login,
-              child: const Text(
-                "Entrar",
+              const SizedBox(
+                height: 15.0,
               ),
-            ),
+              if (_mensagemErro != null)
+                Text(
+                  _mensagemErro!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+            ],
           ),
-          const SizedBox(
-            height: 15.0,
-          ),
-          if (_mensagemErro != null)
-            Text(
-              _mensagemErro!,
-              style: const TextStyle(color: Colors.red),
-            ),
         ],
       ),
     );
