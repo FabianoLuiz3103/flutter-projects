@@ -1,6 +1,9 @@
 import 'package:avatar_maker/avatar_maker.dart';
 import 'package:eurointegrate_app/components/consts.dart';
 import 'package:eurointegrate_app/pages/editar_avatar.dart';
+import 'package:eurointegrate_app/pages/editar_nascimento.dart';
+import 'package:eurointegrate_app/pages/editar_nome.dart';
+import 'package:eurointegrate_app/pages/editar_telefone.dart';
 import 'package:flutter/material.dart';
 
 class Perfil extends StatefulWidget {
@@ -89,7 +92,12 @@ class _PerfilState extends State<Perfil> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                   Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EditarNome(primeiroNome: 'Larissa', sobrenome: 'Santos',)),
+                      );
+                },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
             ],
@@ -131,7 +139,12 @@ class _PerfilState extends State<Perfil> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EditarNascimento(dataNascimento: '1994-03-15')),
+                      );
+                },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
             ],
@@ -152,7 +165,12 @@ class _PerfilState extends State<Perfil> {
                 ),
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EditarTelefone(telefone: '1199999-9999')),
+                      );
+                },
                 icon: Icon(Icons.arrow_forward_ios),
               ),
             ],

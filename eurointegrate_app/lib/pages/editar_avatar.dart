@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:avatar_maker/avatar_maker.dart';
 import 'package:eurointegrate_app/avatar/maker.dart';
+import 'package:eurointegrate_app/components/consts.dart';
 import 'package:flutter/material.dart';
 
 class EditarAvatar extends StatelessWidget {
@@ -11,7 +12,10 @@ class EditarAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     var _width = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: Text("Edição de avatar"),
+        backgroundColor: azulEuro,
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Column(
@@ -28,9 +32,14 @@ class EditarAvatar extends StatelessWidget {
                 width: min(600, _width * 0.85),
                 child: Row(
                   children: [
-                    Text(
-                      "Customize:",
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Row(
+                      children: [
+                        Text(
+                          "Seus pontos: 10",
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        Icon(Icons.star, color: Colors.amber,)
+                      ],
                     ),
                     Spacer(),
                     AvatarMakerSaveWidget(onTap: () async {String avatar = await AvatarMakerController.getJsonOptions(); print(avatar);},),

@@ -1,6 +1,7 @@
 import "package:avatar_maker/avatar_maker.dart";
 import "package:avatar_maker/src/customizer/widgets/customizer_appbar.dart";
 import "package:avatar_maker/src/customizer/widgets/customizer_bottom_navbar.dart";
+import "package:eurointegrate_app/components/consts.dart";
 import "package:flutter/cupertino.dart";
 import "package:flutter/material.dart";
 import "package:flutter_svg/flutter_svg.dart";
@@ -92,12 +93,17 @@ class Customizer extends StatelessWidget {
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(4.0),
               ),
-              child: Text(
-                '$points',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    '$points',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Icon(Icons.star, size: 12, color: Colors.amber,)
+                ],
               ),
             ),
           ),
@@ -105,7 +111,7 @@ class Customizer extends StatelessWidget {
           Visibility(
             visible: isBlocked,
             child: Positioned(
-              top: 5,
+              top: 30,
               left: 5,
               child: Container(
                 padding: EdgeInsets.all(4.0),
@@ -113,7 +119,7 @@ class Customizer extends StatelessWidget {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(4.0),
                 ),
-                child: Icon(Icons.lock),
+                child: Icon(Icons.lock, size: 12, color: Colors.yellow,),
               ),
             ),
           ),
@@ -133,7 +139,7 @@ class Customizer extends StatelessWidget {
             : size.height * 0.04),
         colorFilter: ColorFilter.mode(
             categoryIndex == tabController.index
-                ? theme.selectedIconColor
+                ? azulEuro
                 : theme.unselectedIconColor,
             BlendMode.srcIn),
         semanticsLabel: propertyCategory.name,
