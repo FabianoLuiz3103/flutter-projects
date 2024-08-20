@@ -1,6 +1,5 @@
 // import 'package:eurointegrate_app/pages/login.dart';
-import 'package:eurointegrate_app/components/consts.dart';
-import 'package:eurointegrate_app/pages/perfil.dart';
+import 'package:eurointegrate_app/pages/login.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -17,10 +16,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor:azulEuro),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: false,
       ),
-      home: const Perfil(),
+      home: const Login(),
     );
   }
 }
