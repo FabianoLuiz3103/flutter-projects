@@ -1,108 +1,42 @@
-import 'dart:async';
+
+import 'package:eurointegrate_app/components/button_navigation.dart';
 import 'package:eurointegrate_app/components/consts.dart';
 import 'package:flutter/material.dart';
-import 'package:appinio_video_player/appinio_video_player.dart';
 
-class VideoScreen extends StatefulWidget {
-  const VideoScreen({super.key});
+class GuiaScreen extends StatefulWidget {
+  const GuiaScreen({super.key});
 
   @override
-  State<VideoScreen> createState() => _VideoScreenState();
+  State<GuiaScreen> createState() => _VideoScreenState();
 }
 
-class _VideoScreenState extends State<VideoScreen> {
-  late CachedVideoPlayerController _videoPlayerController1,
-      _videoPlayerController2,
-      _videoPlayerController3;
-
-  Timer? _progressTimer;
+class _VideoScreenState extends State<GuiaScreen> {
   double _globalProgress = 0.0;
-  Set<int> _watchedVideos = {}; // Para marcar vídeos assistidos
-  Map<int, Timer?> _videoTimers = {}; // Para armazenar timers por vídeo
-
-  final CustomVideoPlayerSettings _customVideoPlayerSettings =
-      const CustomVideoPlayerSettings(showSeekButtons: true);
-
-  @override
-  void initState() {
-    super.initState();
-
-    _initializeVideoControllers();
-  }
-
-  void _initializeVideoControllers() {
-    _videoPlayerController1 = CachedVideoPlayerController.network(longVideo)
-      ..initialize().then((_) {
-        setState(() {});
-        _startVideoTimer(1, _videoPlayerController1);
-      });
-
-    _videoPlayerController2 = CachedVideoPlayerController.network(video240)
-      ..initialize().then((_) {
-        _startVideoTimer(2, _videoPlayerController2);
-      });
-
-    _videoPlayerController3 = CachedVideoPlayerController.network(video480)
-      ..initialize().then((_) {
-        _startVideoTimer(3, _videoPlayerController3);
-      });
-  }
-
-  void _startVideoTimer(int videoIndex, CachedVideoPlayerController videoController) {
-    videoController.addListener(() {
-      if (videoController.value.isPlaying) {
-        if (_videoTimers[videoIndex] == null) {
-          _videoTimers[videoIndex] = Timer.periodic(Duration(seconds: 1), (_) {
-            if (videoController.value.isPlaying && !videoController.value.isBuffering) {
-              setState(() {
-                _globalProgress += 1; // Incrementa o progresso em 1 segundo
-              });
-            }
-          });
-        }
-      } else {
-        _videoTimers[videoIndex]?.cancel();
-        _videoTimers[videoIndex] = null;
-      }
-
-      if (videoController.value.position == videoController.value.duration) {
-        setState(() {
-          _watchedVideos.add(videoIndex);
-        });
-        _videoTimers[videoIndex]?.cancel();
-        _videoTimers[videoIndex] = null;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _progressTimer?.cancel();
-    _videoPlayerController1.dispose();
-    _videoPlayerController2.dispose();
-    _videoPlayerController3.dispose();
-    _videoTimers.forEach((_, timer) => timer?.cancel());
-    super.dispose();
-  }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Trilha institucional"),
+        title: Text("Guia e normas"),
         backgroundColor: azulEuro,
       ),
       body: Center(
         child: Container(
-          width: MediaQuery.of(context).size.width * 0.90 ,
+          width: MediaQuery.of(context).size.width * 0.90,
           height: MediaQuery.of(context).size.height * 0.85,
-          child: PageView(
+          child: Column(
             children: [
-              _buildVideoPage("Video 1", perguntasVideo1, _videoPlayerController1, 1),
-              _buildVideoPage("Video 2", perguntasVideo2, _videoPlayerController2, 2),
-              _buildVideoPage("Video 3", perguntasVideo3,_videoPlayerController3, 3),
-              _buildVideoPage("Video 4", perguntasVideo4, _videoPlayerController1, 4),
+              Expanded(
+                child: PageView(
+                  children: [
+                    _buildGuiaPage("Guia 2", perguntasVideo2, 2),
+                    _buildGuiaPage("Guia 3", perguntasVideo3, 3),
+                    _buildGuiaPage("Guia 4", perguntasVideo4, 4),
+                    _buildGuiaPage("Guia 1", perguntasVideo1, 1),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8,)
             ],
           ),
         ),
@@ -110,53 +44,71 @@ class _VideoScreenState extends State<VideoScreen> {
     );
   }
 
-  Widget _buildVideoPage(String videoTitle, List<Pergunta> perguntas, CachedVideoPlayerController videoController, int videoIndex) {
-    double progress = (_globalProgress /1000);
+  Widget _buildGuiaPage(String guia, List<Pergunta> perguntas, int videoIndex) {
+    double progress = (_globalProgress / 1000);
 
-   return Column(
-    children: [
-      // Barra de progresso
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: progress,
+    return Column(
+      children: [
+        // Texto de porcentagem
+        // Barra de progresso
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: progress,
+                  color: azulEuro,
+                  backgroundColor: Colors.grey,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  minHeight: 20,
+                ),
+              ),
+              SizedBox(width: 8,),
+              Text(
+              "${(progress * 10).toStringAsFixed(1)}%",
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
                 color: azulEuro,
-                backgroundColor: Colors.grey,
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-                minHeight: 20,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            ],
+          ),
+        ),
+       // SizedBox(height: 12),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.0),
+              color: cinza,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      "NORMA 1",
+                      style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      "A tecnologia tem transformado radicalmente a maneira como vivemos e interagimos no mundo moderno. Desde o surgimento da internet, nossa capacidade de comunicação e acesso à informação expandiu-se exponencialmente. Hoje, é possível conectar-se com pessoas em diferentes partes do globo instantaneamente, compartilhar conhecimento e colaborar em projetos com uma facilidade antes inimaginável. "
+                      "Os dispositivos móveis, como smartphones e tablets, tornaram-se extensões de nossos corpos, permitindo que permaneçamos conectados em qualquer lugar e a qualquer momento. As redes sociais, por sua vez, transformaram a maneira como nos relacionamos, criando novas formas de expressar nossas identidades e construir comunidades online. "
+                      "Além disso, a inteligência artificial e o aprendizado de máquina estão revolucionando setores como saúde, finanças e educação, oferecendo soluções inovadoras para problemas complexos. No entanto, com esses avanços vêm desafios significativos, como a privacidade dos dados e o impacto da automação no mercado de trabalho. Enfrentar esses desafios de forma ética será crucial para garantir que a tecnologia continue a beneficiar a sociedade como um todo.",
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(width: 8,),
-            Text(
-            "${(progress * 10).toStringAsFixed(1)}%",
-            style: const TextStyle(
-              fontSize: 12, // Aumenta o tamanho do texto
-              fontWeight: FontWeight.bold, // Deixa o texto em negrito
-              color: azulEuro
-            ),
-            textAlign: TextAlign.center, // Centraliza o texto
-          ),
-          ],
-        ),
-      ),
-        Expanded(
-          child: CustomVideoPlayer(
-            customVideoPlayerController: CustomVideoPlayerController(
-              context: context,
-              videoPlayerController: videoController,
-              customVideoPlayerSettings: _customVideoPlayerSettings,
-              additionalVideoSources: {
-                "240p": _videoPlayerController2,
-                "480p": _videoPlayerController3,
-                "720p": _videoPlayerController1,
-              },
-            ),
           ),
         ),
-        SizedBox(height: 12,),
+        SizedBox(height: 12),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -228,6 +180,7 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 }
 
+
 class Pergunta {
   String enunciado = '';
   List<Opcao> ops = [];
@@ -254,14 +207,6 @@ class Opcao {
   }
 }
 
-String longVideo =
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-String video720 =
-    "https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4";
-String video480 =
-    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-String video240 =
-    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
 
 // Listas de perguntas para cada vídeo
 List<Pergunta> perguntasVideo1 = [

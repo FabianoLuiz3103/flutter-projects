@@ -4,7 +4,6 @@ import 'package:eurointegrate_app/components/balao.dart';
 import 'package:eurointegrate_app/components/cards.dart';
 import 'package:eurointegrate_app/components/consts.dart';
 import 'package:eurointegrate_app/components/cont.dart';
-import 'package:eurointegrate_app/pages/perfil.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -21,8 +20,6 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   late String _jwt;
-  int _selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -31,7 +28,7 @@ class _HomeState extends State<Home> {
 
   Future<Map?> _fetchData() async {
     var url = Uri.parse(
-        'https://ad8b-2804-18-804-f425-2923-8f06-a77c-1e7a.ngrok-free.app/colaboradores/home');
+        'https://every-crabs-mix.loca.lt/colaboradores/home');
     String token = _jwt;
 
     try {
@@ -52,20 +49,6 @@ class _HomeState extends State<Home> {
     } catch (e) {
       print("Erro na requisição: $e");
       return null;
-    }
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    if (index == 2) {
-      // Navegar para a tela de perfil
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Perfil()),
-      );
     }
   }
 
@@ -452,41 +435,9 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.video_collection),
-            label: 'Videos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.menu_book_rounded),
-            label: 'Guia',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_events),
-            label: 'Conquistas',
-          ),
-        ],
-        selectedItemColor: azulEuro,
-        unselectedItemColor: cinza,
-        currentIndex: _selectedIndex, // Mostra o item selecionado
-        onTap: _onItemTapped, // Chama o método quando um item é clicado
-      ),
     );
   }
 }
 
 
-String formatarData(String data) {
-  DateTime dateTime = DateTime.parse(data);
-  return DateFormat('dd/MM/yy').format(dateTime);
-}
+

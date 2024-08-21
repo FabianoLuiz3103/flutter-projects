@@ -1,5 +1,6 @@
 import 'package:eurointegrate_app/components/campo.dart';
 import 'package:eurointegrate_app/components/consts.dart';
+import 'package:eurointegrate_app/components/main_screen.dart';
 import 'package:eurointegrate_app/pages/home.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -26,7 +27,7 @@ class _LoginState extends State<Login> {
       _mensagemErro = null;
     });
     var url = Uri.parse(
-        'https://ad8b-2804-18-804-f425-2923-8f06-a77c-1e7a.ngrok-free.app/users/login');
+        'https://every-crabs-mix.loca.lt/users/login');
     var body = {"email": _email.text, "senha": _senha.text};
     var jsonBody = jsonEncode(body);
     http.Response? response;
@@ -53,7 +54,10 @@ class _LoginState extends State<Login> {
       if(response!.statusCode == 200){
          Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         String token = jsonResponse["token"];
-        Navigator.push(context, MaterialPageRoute(builder: (context) =>  Home(token: token)));
+       Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => MainScreen(token: token)),
+    );
       }
       if (response.statusCode == 401) {
         _mensagemErro = '${response.body}: email ou senha inválidos';

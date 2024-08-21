@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 const medidaRaio = Radius.circular(25.0);
 const raio =  BorderRadius.all(medidaRaio);
@@ -10,3 +11,8 @@ final phoneMask = MaskTextInputFormatter(
       mask: '(##) #####-####',
       filter: {"#": RegExp(r'[0-9]')},
     );
+
+String formatarData(String data) {
+  DateTime dateTime = DateTime.parse(data);
+  return DateFormat('dd/MM/yy').format(dateTime);
+}
