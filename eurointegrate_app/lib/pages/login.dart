@@ -27,7 +27,7 @@ class _LoginState extends State<Login> {
       _mensagemErro = null;
     });
     var url = Uri.parse(
-        'https://every-crabs-mix.loca.lt/users/login');
+        'https://yellow-parrots-hammer.loca.lt/users/login');
     var body = {"email": _email.text, "senha": _senha.text};
     var jsonBody = jsonEncode(body);
     http.Response? response;

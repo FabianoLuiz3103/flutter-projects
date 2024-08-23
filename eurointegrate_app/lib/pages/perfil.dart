@@ -19,7 +19,7 @@ class _PerfilState extends State<Perfil> {
   Map? userData;
 
   Future<void> _fetchData() async {
-    var url = Uri.parse('https://every-crabs-mix.loca.lt/colaboradores/perfil');
+    var url = Uri.parse('https://yellow-parrots-hammer.loca.lt/colaboradores/perfil');
     String token = widget.token;
 
     try {

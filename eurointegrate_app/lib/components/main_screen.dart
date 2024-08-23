@@ -23,10 +23,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     final List<Widget> _screens = [
       Home(token: widget.token),
-      VideoScreen(),
+      VideoScreen(token: widget.token,),
       Perfil(token: widget.token),
       GuiaScreen(),
-      ConquistasScreen(),
+      ConquistasScreen(token: widget.token,),
     ];
 
     return Scaffold(

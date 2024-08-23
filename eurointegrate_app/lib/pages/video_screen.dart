@@ -1,24 +1,91 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:eurointegrate_app/components/consts.dart';
 import 'package:flutter/material.dart';
 import 'package:appinio_video_player/appinio_video_player.dart';
+import 'package:http/http.dart' as http;
 
 class VideoScreen extends StatefulWidget {
-  const VideoScreen({super.key});
+  final String token;
+  const VideoScreen({super.key, required this.token});
 
   @override
   State<VideoScreen> createState() => _VideoScreenState();
 }
 
 class _VideoScreenState extends State<VideoScreen> {
+  Future<List<List<Pergunta>>>? _fetchPerguntas;
+  String? videoUm, videoDois, videoTres;
+  double pgr = 0.0;
+
+  Future<List<List<Pergunta>>> _fetchData() async {
+    var url = Uri.parse('https://yellow-parrots-hammer.loca.lt/colaboradores/videos');
+    String token = widget.token;
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        pgr = data[0]['porcProgresso']/100;
+        _initVideos(data);
+        List<List<Pergunta>> perguntas = _inicializarPerguntas(data);
+        return perguntas;
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      print("Erro na requisição: $e");
+      return [];
+    }
+  }
+
+  void _initVideos(List<dynamic>? data) {
+    videoUm = data![0]['linkVideo'];
+    videoDois = data[1]['linkVideo'];
+    videoTres = data[2]['linkVideo'];
+  }
+
+  List<List<Pergunta>> _inicializarPerguntas(List<dynamic>? data) {
+    if (data != null && data.isNotEmpty) {
+      List<List<Pergunta>> perguntasList = [];
+      for (var item in data) {
+        if (item is Map<String, dynamic> && item.containsKey("perguntas")) {
+          var perguntasData = item["perguntas"];
+          if (perguntasData is List) {
+            var perguntasSublista = perguntasData
+                .map((perguntaJson) => Pergunta.fromJson(perguntaJson))
+                .toList();
+            perguntasList.add(perguntasSublista);
+          } else {
+            print('O valor de "perguntas" não é uma lista.');
+          }
+        } else {
+          print('Item não contém a chave "perguntas" ou não é um mapa.');
+        }
+      }
+      return perguntasList;
+    } else {
+      print('Dados não disponíveis ou estão vazios.');
+      return [];
+    }
+  }
+
   late CachedVideoPlayerController _videoPlayerController1,
       _videoPlayerController2,
       _videoPlayerController3;
 
   Timer? _progressTimer;
   double _globalProgress = 0.0;
-  Set<int> _watchedVideos = {}; // Para marcar vídeos assistidos
-  Map<int, Timer?> _videoTimers = {}; // Para armazenar timers por vídeo
+  Set<int> _watchedVideos = {};
+  Map<int, Timer?> _videoTimers = {};
 
   final CustomVideoPlayerSettings _customVideoPlayerSettings =
       const CustomVideoPlayerSettings(showSeekButtons: true);
@@ -26,36 +93,40 @@ class _VideoScreenState extends State<VideoScreen> {
   @override
   void initState() {
     super.initState();
-
-    _initializeVideoControllers();
+    _fetchPerguntas = _fetchData().then((perguntas) {
+      _initializeVideoControllers();
+      return perguntas;
+    });
   }
 
   void _initializeVideoControllers() {
-    _videoPlayerController1 = CachedVideoPlayerController.network(longVideo)
+    _videoPlayerController1 = CachedVideoPlayerController.network(videoUm!)
       ..initialize().then((_) {
         setState(() {});
         _startVideoTimer(1, _videoPlayerController1);
       });
 
-    _videoPlayerController2 = CachedVideoPlayerController.network(video240)
+    _videoPlayerController2 = CachedVideoPlayerController.network(videoDois!)
       ..initialize().then((_) {
         _startVideoTimer(2, _videoPlayerController2);
       });
 
-    _videoPlayerController3 = CachedVideoPlayerController.network(video480)
+    _videoPlayerController3 = CachedVideoPlayerController.network(videoTres!)
       ..initialize().then((_) {
         _startVideoTimer(3, _videoPlayerController3);
       });
   }
 
-  void _startVideoTimer(int videoIndex, CachedVideoPlayerController videoController) {
+  void _startVideoTimer(
+      int videoIndex, CachedVideoPlayerController videoController) {
     videoController.addListener(() {
       if (videoController.value.isPlaying) {
         if (_videoTimers[videoIndex] == null) {
           _videoTimers[videoIndex] = Timer.periodic(Duration(seconds: 1), (_) {
-            if (videoController.value.isPlaying && !videoController.value.isBuffering) {
+            if (videoController.value.isPlaying &&
+                !videoController.value.isBuffering) {
               setState(() {
-                _globalProgress += 1; // Incrementa o progresso em 1 segundo
+                _globalProgress += 2;
               });
             }
           });
@@ -65,7 +136,8 @@ class _VideoScreenState extends State<VideoScreen> {
         _videoTimers[videoIndex] = null;
       }
 
-      if (videoController.value.position == videoController.value.duration) {
+      if (videoController.value.position ==
+          videoController.value.duration) {
         setState(() {
           _watchedVideos.add(videoIndex);
         });
@@ -85,7 +157,6 @@ class _VideoScreenState extends State<VideoScreen> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,55 +164,73 @@ class _VideoScreenState extends State<VideoScreen> {
         title: Text("Trilha institucional"),
         backgroundColor: azulEuro,
       ),
-      body: Center(
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.90 ,
-          height: MediaQuery.of(context).size.height * 0.85,
-          child: PageView(
-            children: [
-              _buildVideoPage("Video 1", perguntasVideo1, _videoPlayerController1, 1),
-              _buildVideoPage("Video 2", perguntasVideo2, _videoPlayerController2, 2),
-              _buildVideoPage("Video 3", perguntasVideo3,_videoPlayerController3, 3),
-              _buildVideoPage("Video 4", perguntasVideo4, _videoPlayerController1, 4),
-            ],
-          ),
-        ),
+      body: FutureBuilder<List<List<Pergunta>>>(
+        future: _fetchPerguntas,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Erro ao carregar dados: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('Nenhuma pergunta disponível.'));
+          } else {
+            List<List<Pergunta>> perguntasList = snapshot.data!;
+            List<CachedVideoPlayerController> controlles = [_videoPlayerController1, _videoPlayerController2, _videoPlayerController3];
+
+            return Center(
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.90,
+                height: MediaQuery.of(context).size.height * 0.85,
+                child: PageView(
+                  children: [
+                    for (int i = 0; i < perguntasList.length; i++)
+                      _buildVideoPage(perguntasList[i], controlles[i], i + 1, pgr),
+                  ],
+                ),
+              ),
+            );
+          }
+        },
       ),
     );
   }
 
-  Widget _buildVideoPage(String videoTitle, List<Pergunta> perguntas, CachedVideoPlayerController videoController, int videoIndex) {
-    double progress = (_globalProgress /1000);
+  Widget _buildVideoPage(
+    List<Pergunta> perguntas,
+    CachedVideoPlayerController videoController,
+    int videoIndex,
+    double progressLoad
+  ) {
+    double progress = progressLoad + (_globalProgress / 1000);
 
-   return Column(
-    children: [
-      // Barra de progresso
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: progress,
-                color: azulEuro,
-                backgroundColor: Colors.grey,
-                borderRadius: BorderRadius.all(Radius.circular(20)),
-                minHeight: 20,
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: LinearProgressIndicator(
+                  value: progress,
+                  color: azulEuro,
+                  backgroundColor: Colors.grey,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  minHeight: 20,
+                ),
               ),
-            ),
-            SizedBox(width: 8,),
-            Text(
-            "${(progress * 10).toStringAsFixed(1)}%",
-            style: const TextStyle(
-              fontSize: 12, // Aumenta o tamanho do texto
-              fontWeight: FontWeight.bold, // Deixa o texto em negrito
-              color: azulEuro
-            ),
-            textAlign: TextAlign.center, // Centraliza o texto
+              SizedBox(width: 8),
+              Text(
+                "${(progress * 100).toStringAsFixed(1)}%",
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: azulEuro,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          ],
         ),
-      ),
         Expanded(
           child: CustomVideoPlayer(
             customVideoPlayerController: CustomVideoPlayerController(
@@ -149,14 +238,14 @@ class _VideoScreenState extends State<VideoScreen> {
               videoPlayerController: videoController,
               customVideoPlayerSettings: _customVideoPlayerSettings,
               additionalVideoSources: {
-                "240p": _videoPlayerController2,
-                "480p": _videoPlayerController3,
-                "720p": _videoPlayerController1,
+                "240p": _videoPlayerController1,
+                "480p": _videoPlayerController2,
+                "720p": _videoPlayerController3,
               },
             ),
           ),
         ),
-        SizedBox(height: 12,),
+        SizedBox(height: 12),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -180,19 +269,22 @@ class _VideoScreenState extends State<VideoScreen> {
                       child: ListView.builder(
                         itemCount: pergunta.ops.length,
                         itemBuilder: (context, index) {
-                          bool isCorrect = false;
-                          Color buttonColor = azulEuro;
-
-                          if (pergunta.selectedOptionIndex == index) {
-                            isCorrect = pergunta.checkAnswer(index);
-                            buttonColor = isCorrect ? Colors.green : Colors.red;
-                          }
+                          bool isSelected = pergunta.selectedOptionIndex == index;
+                          bool isCorrectOption = pergunta.ops[index].opcao == pergunta.respostaCorreta;
 
                           return ListTile(
                             title: TextButton(
                               style: ButtonStyle(
-                                backgroundColor: WidgetStateProperty.all(buttonColor),
-                                shape: WidgetStateProperty.all(
+                                backgroundColor: MaterialStateProperty.all(
+                                  isSelected
+                                      ? (pergunta.isCorrect! && isCorrectOption
+                                          ? Colors.green
+                                          : !isCorrectOption
+                                              ? Colors.red
+                                              : azulEuro)
+                                      : azulEuro,
+                                ),
+                                shape: MaterialStateProperty.all(
                                   RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18.0),
                                   ),
@@ -206,7 +298,7 @@ class _VideoScreenState extends State<VideoScreen> {
                                   ? null
                                   : () {
                                       setState(() {
-                                        _globalProgress += 20;
+                                        _globalProgress += 4;
                                         pergunta.selectedOptionIndex = index;
                                         pergunta.isAnswered = true;
                                         pergunta.isCorrect = pergunta.checkAnswer(index);
@@ -228,122 +320,45 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 }
 
+class Opcao {
+  String texto;
+  String opcao;
+
+  Opcao({required this.texto, required this.opcao});
+
+  factory Opcao.fromJson(Map<String, dynamic> json) {
+    return Opcao(
+      texto: json['texto'],
+      opcao: json['opcao'],
+    );
+  }
+}
+
 class Pergunta {
-  String enunciado = '';
-  List<Opcao> ops = [];
+  String enunciado;
+  String respostaCorreta;
+  List<Opcao> ops;
   int? selectedOptionIndex;
   bool isAnswered = false;
   bool? isCorrect;
 
-  Pergunta({required String enun, required List<Opcao> op}) {
-    this.enunciado = enun;
-    this.ops = op;
+  Pergunta({
+    required this.enunciado,
+    required this.respostaCorreta,
+    required this.ops,
+  });
+
+  factory Pergunta.fromJson(Map<String, dynamic> json) {
+    return Pergunta(
+      enunciado: json['enunciado'],
+      respostaCorreta: json['respostaCorreta'],
+      ops: (json['opcoes'] as List<dynamic>)
+          .map((op) => Opcao.fromJson(op))
+          .toList(),
+    );
   }
 
   bool checkAnswer(int index) {
-    return ops[index].opcao == "A"; // Supondo que "A" é a resposta correta.
+    return ops[index].opcao == respostaCorreta;
   }
 }
-
-class Opcao {
-  String texto = ' ';
-  String opcao = ' ';
-  Opcao({required String tex, required String op}) {
-    this.texto = tex;
-    this.opcao = op;
-  }
-}
-
-String longVideo =
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-String video720 =
-    "https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4";
-String video480 =
-    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-String video240 =
-    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
-
-// Listas de perguntas para cada vídeo
-List<Pergunta> perguntasVideo1 = [
-  Pergunta(
-      enun:
-          "QUESTÃO 1: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q1", op: "A"),
-        Opcao(tex: "OPCAO B - Q1", op: "B"),
-        Opcao(tex: "OPCAO C - Q1", op: "C"),
-        Opcao(tex: "OPCAO D - Q1", op: "D")
-      ]),
-  Pergunta(
-      enun:
-          "QUESTÃO 2: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q2", op: "A"),
-        Opcao(tex: "OPCAO B - Q2", op: "B"),
-        Opcao(tex: "OPCAO C - Q2", op: "C"),
-        Opcao(tex: "OPCAO D - Q2", op: "D")
-      ]),
-];
-
-List<Pergunta> perguntasVideo2 = [
-  Pergunta(
-      enun:
-          "QUESTÃO 1: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q1", op: "A"),
-        Opcao(tex: "OPCAO B - Q1", op: "B"),
-        Opcao(tex: "OPCAO C - Q1", op: "C"),
-        Opcao(tex: "OPCAO D - Q1", op: "D")
-      ]),
-  Pergunta(
-      enun:
-          "QUESTÃO 2: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q2", op: "A"),
-        Opcao(tex: "OPCAO B - Q2", op: "B"),
-        Opcao(tex: "OPCAO C - Q2", op: "C"),
-        Opcao(tex: "OPCAO D - Q2", op: "D")
-      ]),
-];
-
-List<Pergunta> perguntasVideo3 = [
-  Pergunta(
-      enun:
-          "QUESTÃO 1: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q1", op: "A"),
-        Opcao(tex: "OPCAO B - Q1", op: "B"),
-        Opcao(tex: "OPCAO C - Q1", op: "C"),
-        Opcao(tex: "OPCAO D - Q1", op: "D")
-      ]),
-  Pergunta(
-      enun:
-          "QUESTÃO 2: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q2", op: "A"),
-        Opcao(tex: "OPCAO B - Q2", op: "B"),
-        Opcao(tex: "OPCAO C - Q2", op: "C"),
-        Opcao(tex: "OPCAO D - Q2", op: "D")
-      ]),
-];
-
-List<Pergunta> perguntasVideo4 = [
-  Pergunta(
-      enun:
-          "QUESTÃO 1: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q1", op: "A"),
-        Opcao(tex: "OPCAO B - Q1", op: "B"),
-        Opcao(tex: "OPCAO C - Q1", op: "C"),
-        Opcao(tex: "OPCAO D - Q1", op: "D")
-      ]),
-  Pergunta(
-      enun:
-          "QUESTÃO 2: Qual das alternativas abaixo está correta em relação ao tema abordado?",
-      op: [
-        Opcao(tex: "OPCAO A - Q2", op: "A"),
-        Opcao(tex: "OPCAO B - Q2", op: "B"),
-        Opcao(tex: "OPCAO C - Q2", op: "C"),
-        Opcao(tex: "OPCAO D - Q2", op: "D")
-      ]),
-];
