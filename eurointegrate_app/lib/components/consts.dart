@@ -16,3 +16,4 @@ String formatarData(String data) {
   DateTime dateTime = DateTime.parse(data);
   return DateFormat('dd/MM/yy').format(dateTime);
 }
+const String urlAPI = "https://wise-pigs-joke.loca.lt";

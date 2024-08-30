@@ -9,7 +9,8 @@ import 'package:http/http.dart' as http;
 
 class Perfil extends StatefulWidget {
   final String token;
-  const Perfil({super.key, required this.token});
+  final int id;
+  const Perfil({super.key, required this.token, required this.id});
 
   @override
   State<Perfil> createState() => _PerfilState();
@@ -19,7 +20,7 @@ class _PerfilState extends State<Perfil> {
   Map? userData;
 
   Future<void> _fetchData() async {
-    var url = Uri.parse('https://yellow-parrots-hammer.loca.lt/colaboradores/perfil');
+    var url = Uri.parse('$urlAPI/colaboradores/perfil/${widget.id}');
     String token = widget.token;
 
     try {
@@ -90,7 +91,7 @@ class _PerfilState extends State<Perfil> {
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => EditarAvatar(token: widget.token, pontos: userData!['pontuacao'],)),
+                              MaterialPageRoute(builder: (context) => EditarAvatar(token: widget.token, pontos: userData!['pontuacao'],id: widget.id)),
                             );
                           },
                           icon: Icon(Icons.arrow_forward_ios),

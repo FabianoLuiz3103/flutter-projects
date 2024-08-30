@@ -10,10 +10,11 @@ import 'package:http/http.dart' as http;
 class EditarAvatar extends StatelessWidget {
   final String token;
   final int pontos;
-  EditarAvatar({super.key, required this.token, required this.pontos});
+  final int id;
+  EditarAvatar({super.key, required this.token, required this.pontos, required this.id});
 
   Future<void> _save(String avatar) async {
-  var url = Uri.parse('https://every-crabs-mix.loca.lt/colaboradores/avatar');
+  var url = Uri.parse('$urlAPI/colaboradores/avatar/$id');
   var body = {"avatar": avatar};
   var jsonBody = jsonEncode(body);
   http.Response? response;

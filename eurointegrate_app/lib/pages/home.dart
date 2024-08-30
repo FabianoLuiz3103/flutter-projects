@@ -12,7 +12,8 @@ import 'package:get/get.dart';
 
 class Home extends StatefulWidget {
   final String token;
-  const Home({Key? key, required this.token}) : super(key: key);
+  final int id;
+  const Home({Key? key, required this.token, required this.id}) : super(key: key);
 
   @override
   State<Home> createState() => _HomeState();
@@ -20,15 +21,17 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   late String _jwt;
+  late int _id;
   @override
   void initState() {
     super.initState();
     _jwt = widget.token;
+    _id = widget.id;
   }
 
   Future<Map?> _fetchData() async {
     var url = Uri.parse(
-        'https://yellow-parrots-hammer.loca.lt/colaboradores/home');
+        '$urlAPI/colaboradores/home/${widget.id}');
     String token = _jwt;
 
     try {
@@ -259,6 +262,7 @@ class _HomeState extends State<Home> {
                                         fit: BoxFit.scaleDown,
                                         child: Text(
                                           "${_dados["stsIntegracao"]}",
+                                          
                                           style: const TextStyle(fontSize: 20),
                                         ),
                                       ),
@@ -312,7 +316,7 @@ class _HomeState extends State<Home> {
                                       width: 6,
                                     ),
                                     Text(
-                                      "${_dados["porcProgresso"]}%",
+                                      "${_dados["porcProgresso"].toStringAsFixed(1)}%",
                                       style: const TextStyle(fontSize: 15),
                                     )
                                   ],

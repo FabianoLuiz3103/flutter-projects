@@ -103,6 +103,11 @@ INSERT INTO tbl_opcoes (opcao, texto, id_pergunta) VALUES ('C', 'Texto da opcao 
 INSERT INTO tbl_opcoes (opcao, texto, id_pergunta) VALUES ('D', 'Texto da opcao D', 9);
 
 
+INSERT INTO tbl_respostas(colaborador_id, pergunta_id, resposta, foi_respondida, data_resposta) VALUES (9, 1, 'A', true, sysdate);
+INSERT INTO tbl_respostas(colaborador_id, pergunta_id, resposta, foi_respondida, data_resposta) VALUES (9, 2, 'C', true, sysdate);
+INSERT INTO tbl_respostas(colaborador_id, pergunta_id, resposta, foi_respondida, data_resposta) VALUES (9, 3, 'C', true, sysdate);
+
+
 INSERT INTO tbl_normas (nome, descricao, id_departamento) VALUES ('Norma-1-Marketing', 'Essa é descrição da Norma-1-Marketing', 3);
 INSERT INTO tbl_normas (nome, descricao, id_departamento) VALUES ('Norma-2-Marketing', 'Essa é descrição da Norma-2-Marketing', 3);
 INSERT INTO tbl_normas (nome, descricao, id_departamento) VALUES ('Norma-3-Marketing', 'Essa é descrição da Norma-3-Marketing', 3);

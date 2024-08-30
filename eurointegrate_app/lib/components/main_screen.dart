@@ -8,8 +8,8 @@ import 'package:eurointegrate_app/components/button_navigation.dart';
 
 class MainScreen extends StatefulWidget {
   final String token;
-
-  const MainScreen({Key? key, required this.token}) : super(key: key);
+  final int id;
+  const MainScreen({Key? key, required this.token, required this.id}) : super(key: key);
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -22,9 +22,9 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> _screens = [
-      Home(token: widget.token),
-      VideoScreen(token: widget.token,),
-      Perfil(token: widget.token),
+      Home(token: widget.token, id: widget.id,),
+      VideoScreen(token: widget.token, id: widget.id,),
+      Perfil(token: widget.token, id: widget.id,),
       GuiaScreen(),
       ConquistasScreen(token: widget.token,),
     ];

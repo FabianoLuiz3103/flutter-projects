@@ -1,25 +1,39 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:eurointegrate_app/components/consts.dart';
+import 'package:eurointegrate_app/main.dart';
+import 'package:eurointegrate_app/model/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:appinio_video_player/appinio_video_player.dart';
 import 'package:http/http.dart' as http;
 
 class VideoScreen extends StatefulWidget {
   final String token;
-  const VideoScreen({super.key, required this.token});
+  final int id;
+  const VideoScreen({super.key, required this.token, required this.id});
 
   @override
   State<VideoScreen> createState() => _VideoScreenState();
 }
 
-class _VideoScreenState extends State<VideoScreen> {
+class _VideoScreenState extends State<VideoScreen>{
+
+  
+  
   Future<List<List<Pergunta>>>? _fetchPerguntas;
   String? videoUm, videoDois, videoTres;
   double pgr = 0.0;
+  double pgrEnv = 0.0;
+  int pts = 0;
+  List<dynamic> respostas = [];
+  int qtdRespondidas = 0;
+  int qtdCertas = 0;
+  List<Resposta> respondidas = [];
+  int idUser = 0;
+  late final ApiService apiService;
 
   Future<List<List<Pergunta>>> _fetchData() async {
-    var url = Uri.parse('https://yellow-parrots-hammer.loca.lt/colaboradores/videos');
+    var url = Uri.parse('$urlAPI/colaboradores/videos/${widget.id}');
     String token = widget.token;
 
     try {
@@ -34,7 +48,7 @@ class _VideoScreenState extends State<VideoScreen> {
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
-        pgr = data[0]['porcProgresso']/100;
+        //print(data);
         _initVideos(data);
         List<List<Pergunta>> perguntas = _inicializarPerguntas(data);
         return perguntas;
@@ -46,6 +60,42 @@ class _VideoScreenState extends State<VideoScreen> {
       return [];
     }
   }
+
+  Future<List<dynamic>> _fetchDataSeq() async {
+    var url = Uri.parse('$urlAPI/colaboradores/videos-seq/${widget.id}');
+    String token = widget.token;
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        Map data = jsonDecode(response.body);
+        
+        idUser = data['idColaborador'];
+        pgr = data['porcProgresso']/100;
+        pts = data['pontuacao'];
+        qtdRespondidas = data['qtdRespondidas'];
+        qtdCertas = data['qtdCertas'];
+        respostas = data['respostas'];
+       // print(respostas);
+       return respostas;
+       
+      } else {
+        throw Exception('Failed to load data');
+      }
+    } catch (e) {
+      print("Erro na requisição: $e");
+      return [];
+    }
+  }
+
 
   void _initVideos(List<dynamic>? data) {
     videoUm = data![0]['linkVideo'];
@@ -90,14 +140,46 @@ class _VideoScreenState extends State<VideoScreen> {
   final CustomVideoPlayerSettings _customVideoPlayerSettings =
       const CustomVideoPlayerSettings(showSeekButtons: true);
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchPerguntas = _fetchData().then((perguntas) {
-      _initializeVideoControllers();
-      return perguntas;
-    });
+@override
+void initState() {
+  super.initState();
+  apiService = ApiService(token: widget.token, id: widget.id);
+  
+  _fetchPerguntas = Future.wait([
+    _fetchData(),     
+    _fetchDataSeq()   
+  ]).then((results) {
+
+    List<List<Pergunta>> perguntas = results[0] as List<List<Pergunta>>;
+    List<dynamic> respostas = results[1];
+    _initializeVideoControllers();
+    _marcarPerguntasComoRespondidas(perguntas, respostas);
+    return perguntas; 
+  }).catchError((error) {
+    print('Erro ao carregar dados: $error');
+    return [];
+  });
+}
+
+
+
+  void _marcarPerguntasComoRespondidas(List<List<Pergunta>> perguntasList, List<dynamic> respostas) {
+  for (var resposta in respostas) {
+    int perguntaId = resposta['respostaId']['perguntaId'];
+    String respostaDada = resposta['resposta'];
+    bool foiRespondida = resposta['foiRespondida'];
+
+    for (var sublist in perguntasList) {
+      for (var pergunta in sublist) {
+        if (pergunta.id == perguntaId) {
+          pergunta.isAnswered = foiRespondida;
+          pergunta.selectedOptionIndex = pergunta.ops.indexWhere((op) => op.opcao == respostaDada);
+          pergunta.isCorrect = pergunta.checkAnswer(pergunta.selectedOptionIndex!);
+        }
+      }
+    }
   }
+}
 
   void _initializeVideoControllers() {
     _videoPlayerController1 = CachedVideoPlayerController.network(videoUm!)
@@ -147,6 +229,18 @@ class _VideoScreenState extends State<VideoScreen> {
     });
   }
 
+
+// // >>>>>>>>>>. DISPOSE
+// @override
+//   void dispose(){
+//     _progressTimer?.cancel();
+//     _videoPlayerController1.dispose();
+//     _videoPlayerController2.dispose();
+//     _videoPlayerController3.dispose();
+//     _videoTimers.forEach((_, timer) => timer?.cancel());
+//     super.dispose();
+//   }
+
   @override
   void dispose() {
     _progressTimer?.cancel();
@@ -154,9 +248,17 @@ class _VideoScreenState extends State<VideoScreen> {
     _videoPlayerController2.dispose();
     _videoPlayerController3.dispose();
     _videoTimers.forEach((_, timer) => timer?.cancel());
+    // Use Future.microtask to ensure that these functions run in the background.
+    Future.microtask(() async {
+      await apiService.enviarDados(pgrEnv, pts, qtdRespondidas, qtdCertas);
+      await apiService.enviarRespostas(respondidas);
+    });
+
     super.dispose();
   }
 
+  
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,7 +377,7 @@ class _VideoScreenState extends State<VideoScreen> {
                           return ListTile(
                             title: TextButton(
                               style: ButtonStyle(
-                                backgroundColor: MaterialStateProperty.all(
+                                backgroundColor: WidgetStateProperty.all(
                                   isSelected
                                       ? (pergunta.isCorrect! && isCorrectOption
                                           ? Colors.green
@@ -284,7 +386,7 @@ class _VideoScreenState extends State<VideoScreen> {
                                               : azulEuro)
                                       : azulEuro,
                                 ),
-                                shape: MaterialStateProperty.all(
+                                shape: WidgetStateProperty.all(
                                   RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(18.0),
                                   ),
@@ -302,6 +404,14 @@ class _VideoScreenState extends State<VideoScreen> {
                                         pergunta.selectedOptionIndex = index;
                                         pergunta.isAnswered = true;
                                         pergunta.isCorrect = pergunta.checkAnswer(index);
+                                        if(pergunta.isCorrect!){
+                                          pts += 1;
+                                          qtdCertas+=1;
+                                          print("Pontuação -----------------> ${pts}");
+                                        }
+                                        qtdRespondidas+=1;
+                                        pgrEnv = (progress*100);
+                                        respondidas.add(new Resposta(idColaborador: idUser, idPergunta: pergunta.id, resposta:  pergunta.ops[index].opcao));
                                       });
                                     },
                             ),
@@ -335,6 +445,7 @@ class Opcao {
 }
 
 class Pergunta {
+  int id;
   String enunciado;
   String respostaCorreta;
   List<Opcao> ops;
@@ -343,6 +454,7 @@ class Pergunta {
   bool? isCorrect;
 
   Pergunta({
+    required this.id,
     required this.enunciado,
     required this.respostaCorreta,
     required this.ops,
@@ -350,6 +462,7 @@ class Pergunta {
 
   factory Pergunta.fromJson(Map<String, dynamic> json) {
     return Pergunta(
+      id: json['id'],
       enunciado: json['enunciado'],
       respostaCorreta: json['respostaCorreta'],
       ops: (json['opcoes'] as List<dynamic>)
@@ -360,5 +473,21 @@ class Pergunta {
 
   bool checkAnswer(int index) {
     return ops[index].opcao == respostaCorreta;
+  }
+}
+
+class Resposta{
+  int? idColaborador;
+  int? idPergunta;
+  String? resposta;
+
+Resposta({required this.idColaborador, required this.idPergunta, required this.resposta});
+
+ Map<String, dynamic> toJson() {
+    return {
+      'colaboradorId': idColaborador,
+      'perguntaId': idPergunta,
+      'resposta': resposta,
+    };
   }
 }
